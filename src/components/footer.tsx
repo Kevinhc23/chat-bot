@@ -1,14 +1,21 @@
 "use client";
 
-import { useMicrophonePermission } from "@/hooks/useMicrophonePermission";
 import { useRef, useCallback, useState } from "react";
+import { useMicrophonePermission } from "@/hooks/useMicrophonePermission";
+import { useAudioRecorder } from "@/hooks/useRecorderAudio";
 
-export const Playground = () => {
+export const Playground = ({
+  onNewMessage,
+}: {
+  onNewMessage: (message: { type: "text" | "audio"; content: string }) => void;
+}) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const { permissionGranted, requestPermission } = useMicrophonePermission();
   const [isTextInput, setIsTextInput] = useState(false);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+
+  const { isRecording, audioUrl, startRecording, stopRecording } =
+    useAudioRecorder(); // Desestructuramos las funciones y estados del hook
 
   const adjustTextareaHeight = useCallback(() => {
     const textarea = textareaRef.current;
@@ -37,9 +44,14 @@ export const Playground = () => {
     }
 
     if (permissionGranted) {
-      console.log("Recording audio...");
-
-      setAudioBlob(new Blob());
+      if (!isRecording) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
+        startRecording(stream);
+      } else {
+        stopRecording();
+      }
     }
   };
 
@@ -48,14 +60,14 @@ export const Playground = () => {
 
     if (isTextInput) {
       const text = textareaRef.current?.value;
-      console.log("Text submitted: ", text);
-
-      if (textareaRef.current) textareaRef.current.value = "";
-      setIsTextInput(false);
-      adjustTextareaHeight();
-    } else if (audioBlob) {
-      console.log("Audio submitted: ", audioBlob);
-      setAudioBlob(null);
+      if (text) {
+        onNewMessage({ type: "text", content: text });
+        textareaRef.current.value = "";
+        setIsTextInput(false);
+        adjustTextareaHeight();
+      }
+    } else if (audioUrl) {
+      onNewMessage({ type: "audio", content: audioUrl });
     }
   };
 
@@ -86,13 +98,15 @@ export const Playground = () => {
             type="button"
             onClick={handleAudioRecording}
           >
-            <AudioIcon />
+            {isRecording ? <StopIcon /> : <AudioIcon />}
           </button>
         )}
       </form>
     </div>
   );
 };
+
+// Iconos (puedes usar los mismos que tenías antes)
 
 export const ArrowUpIcon = () => (
   <svg
@@ -101,7 +115,7 @@ export const ArrowUpIcon = () => (
     height={24}
     viewBox="0 0 24 24"
     fill="none"
-    stroke="#212121"
+    stroke="#fff"
     strokeWidth={2}
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -132,5 +146,23 @@ export const AudioIcon = () => (
     <path d="M5 10a7 7 0 0 0 14 0" />
     <path d="M8 21l8 0" />
     <path d="M12 17l0 4" />
+  </svg>
+);
+
+export const StopIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={24}
+    height={24}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#fff"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="icon icon-tabler icon-tabler-square"
+  >
+    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+    <rect x="4" y="4" width="16" height="16" rx="2" />
   </svg>
 );
