@@ -60,12 +60,12 @@ export const Playground = () => {
   };
 
   return (
-    <div className="py-6 px-5 w-full sticky bottom-0 bg-[#212121] border-t border-[#505050]">
+    <div className="py-4 px-5 w-full sticky bottom-0 bg-[#212121] border-t border-[#505050]">
       <form onSubmit={handleFormSubmit} className="relative">
         <textarea
           ref={textareaRef}
           onInput={adjustTextareaHeight}
-          className={`w-full bg-[#2f2f2f] py-4 px-6 text-white focus:border-0 focus:outline-none text-xl placeholder:text-white h-auto overflow-hidden resize-none ${
+          className={`w-full bg-[#2f2f2f] py-4 pl-[20px] pr-[56px] text-white focus:border-0 focus:outline-none text-xl placeholder:text-white h-auto overflow-hidden resize-none ${
             isExpanded ? "rounded-2xl" : "rounded-full"
           }`}
           placeholder="Escribe algo"
