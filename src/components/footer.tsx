@@ -1,10 +1,14 @@
 "use client";
 
+import { useMicrophonePermission } from "@/hooks/useMicrophonePermission";
 import { useRef, useCallback, useState } from "react";
 
 export const Playground = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const { permissionGranted, requestPermission } = useMicrophonePermission();
+  const [isTextInput, setIsTextInput] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
 
   const adjustTextareaHeight = useCallback(() => {
     const textarea = textareaRef.current;
@@ -20,33 +24,73 @@ export const Playground = () => {
     }
   }, []);
 
+  const handleTextareaChange = (
+    event: React.ChangeEvent<HTMLTextAreaElement>
+  ) => {
+    const value = event.target.value.trim();
+    setIsTextInput(value.length > 0);
+  };
+
+  const handleAudioRecording = async () => {
+    if (!permissionGranted) {
+      await requestPermission();
+    }
+
+    if (permissionGranted) {
+      console.log("Recording audio...");
+
+      setAudioBlob(new Blob());
+    }
+  };
+
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (isTextInput) {
+      const text = textareaRef.current?.value;
+      console.log("Text submitted: ", text);
+
+      if (textareaRef.current) textareaRef.current.value = "";
+      setIsTextInput(false);
+      adjustTextareaHeight();
+    } else if (audioBlob) {
+      console.log("Audio submitted: ", audioBlob);
+      setAudioBlob(null);
+    }
+  };
+
   return (
-    <>
-      <div className="py-8 px-5 w-full sticky bottom-0 bg-[#212121] border-t border-[#505050]">
-        <div className="">
-          <form className="">
-            <textarea
-              ref={textareaRef}
-              onInput={adjustTextareaHeight}
-              className={`w-full bg-[#2f2f2f] py-4 px-16 text-white focus:border-0 relative focus:outline-none text-xl placeholder:text-white h-auto overflow-hidden resize-none ${
-                isExpanded ? "rounded-2xl" : "rounded-full"
-              }`}
-              placeholder="Envia una nota de audio"
-              rows={1}
-            />
-            <button className="absolute left-8 bottom-12 p-2 rounded-full">
-              <PaperClip />
-            </button>
-            <button
-              className="absolute right-8 bottom-12 bg-[#505050] p-2 rounded-full"
-              type="submit"
-            >
-              <ArrowUpIcon />
-            </button>
-          </form>
-        </div>
-      </div>
-    </>
+    <div className="py-6 px-5 w-full sticky bottom-0 bg-[#212121] border-t border-[#505050]">
+      <form onSubmit={handleFormSubmit} className="relative">
+        <textarea
+          ref={textareaRef}
+          onInput={adjustTextareaHeight}
+          className={`w-full bg-[#2f2f2f] py-4 px-6 text-white focus:border-0 focus:outline-none text-xl placeholder:text-white h-auto overflow-hidden resize-none ${
+            isExpanded ? "rounded-2xl" : "rounded-full"
+          }`}
+          placeholder="Escribe algo"
+          rows={1}
+          onChange={handleTextareaChange}
+        />
+
+        {isTextInput ? (
+          <button
+            className="absolute right-4 bottom-4 bg-[#505050] p-2 rounded-full"
+            type="submit"
+          >
+            <ArrowUpIcon />
+          </button>
+        ) : (
+          <button
+            className="absolute right-4 bottom-4 bg-[#505050] p-2 rounded-full"
+            type="button"
+            onClick={handleAudioRecording}
+          >
+            <AudioIcon />
+          </button>
+        )}
+      </form>
+    </div>
   );
 };
 
@@ -70,7 +114,7 @@ export const ArrowUpIcon = () => (
   </svg>
 );
 
-export const PaperClip = () => (
+export const AudioIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={24}
@@ -81,9 +125,12 @@ export const PaperClip = () => (
     strokeWidth={2}
     strokeLinecap="round"
     strokeLinejoin="round"
-    className="icon icon-tabler icons-tabler-outline icon-tabler-paperclip"
+    className="icon icon-tabler icons-tabler-outline icon-tabler-microphone"
   >
     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-    <path d="M15 7l-6.5 6.5a1.5 1.5 0 0 0 3 3l6.5 -6.5a3 3 0 0 0 -6 -6l-6.5 6.5a4.5 4.5 0 0 0 9 9l6.5 -6.5" />
+    <path d="M9 2m0 3a3 3 0 0 1 3 -3h0a3 3 0 0 1 3 3v5a3 3 0 0 1 -3 3h0a3 3 0 0 1 -3 -3z" />
+    <path d="M5 10a7 7 0 0 0 14 0" />
+    <path d="M8 21l8 0" />
+    <path d="M12 17l0 4" />
   </svg>
 );

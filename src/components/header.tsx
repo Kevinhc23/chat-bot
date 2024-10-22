@@ -3,7 +3,7 @@ import Link from "next/link";
 export const Header = () => {
   return (
     <>
-      <div className="bg-[#212121] py-8 px-5 w-full sticky top-0 border-b border-[#505050]">
+      <div className="bg-[#212121] py-6 px-5 w-full sticky top-0 border-b border-[#505050]">
         <div className="flex justify-between items-center">
           <button className="flex gap-1 items-center text-white w-[65px]">
             <ArrowLeftIcon />
