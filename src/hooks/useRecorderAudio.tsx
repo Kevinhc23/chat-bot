@@ -1,8 +1,11 @@
+"use client";
+
 import { useState, useRef } from "react";
 
 export const useAudioRecorder = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null); // Guardar el Blob
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunks = useRef<Blob[]>([]);
 
@@ -17,6 +20,7 @@ export const useAudioRecorder = () => {
       const audioBlob = new Blob(audioChunks.current, { type: "audio/wav" });
       const audioUrl = URL.createObjectURL(audioBlob);
       setAudioUrl(audioUrl);
+      setAudioBlob(audioBlob);
       audioChunks.current = [];
     };
 
@@ -32,5 +36,5 @@ export const useAudioRecorder = () => {
     }
   };
 
-  return { isRecording, audioUrl, startRecording, stopRecording };
+  return { isRecording, audioUrl, audioBlob, startRecording, stopRecording };
 };

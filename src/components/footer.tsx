@@ -1,26 +1,79 @@
 "use client";
 
-import { ArrowUpIcon, AudioIcon, StopIcon } from "@/assets/icons/icons"; // Asegúrate de tener estos íconos en la carpeta de componentes.
-import { usePlaygroundLogic } from "@/hooks/usePlaygroundLogic"; // La lógica que se va a extraer
+import { ArrowUpIcon, AudioIcon, StopIcon } from "@/assets/icons/icons";
+import { useRef, useCallback, useState } from "react";
+import { useMicrophonePermission } from "@/hooks/useMicrophonePermission";
+import { useAudioRecorder } from "@/hooks/useRecorderAudio";
+import { AudioVisualizer } from "react-audio-visualize";
 
 export const Playground = ({
   onNewMessage,
 }: {
   onNewMessage: (message: { type: "text" | "audio"; content: string }) => void;
 }) => {
-  const {
-    textareaRef,
-    isExpanded,
-    isTextInput,
-    isRecording,
-    handleTextareaChange,
-    handleAudioRecording,
-    handleFormSubmit,
-    adjustTextareaHeight,
-  } = usePlaygroundLogic(onNewMessage);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isTextInput, setIsTextInput] = useState(false);
+  const { permissionGranted, requestPermission } = useMicrophonePermission();
+  const { isRecording, audioUrl, audioBlob, startRecording, stopRecording } =
+    useAudioRecorder();
+
+  const adjustTextareaHeight = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = `${textarea.scrollHeight}px`;
+
+      if (textarea.scrollHeight > 60) {
+        setIsExpanded(true);
+      } else {
+        setIsExpanded(false);
+      }
+    }
+  }, []);
+
+  const handleTextareaChange = (
+    event: React.ChangeEvent<HTMLTextAreaElement>
+  ) => {
+    const value = event.target.value.trim();
+    setIsTextInput(value.length > 0);
+  };
+
+  const handleAudioRecording = async () => {
+    if (!permissionGranted) {
+      await requestPermission();
+    }
+
+    if (permissionGranted) {
+      if (!isRecording) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
+        startRecording(stream);
+      } else {
+        stopRecording();
+      }
+    }
+  };
+
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (isTextInput) {
+      const text = textareaRef.current?.value;
+      if (text) {
+        onNewMessage({ type: "text", content: text });
+        textareaRef.current.value = "";
+        setIsTextInput(false);
+        adjustTextareaHeight();
+      }
+    } else if (audioUrl) {
+      onNewMessage({ type: "audio", content: audioUrl });
+    }
+  };
 
   return (
-    <div className="py-4 px-5 w-full bg-[#212121] border-t border-[#505050] h-auto">
+    <div className="py-4 px-5 w-full bg-[#212121] border-t border-[#505050]">
       <form onSubmit={handleFormSubmit} className="relative">
         <textarea
           ref={textareaRef}
@@ -50,6 +103,19 @@ export const Playground = ({
           </button>
         )}
       </form>
+
+      {audioBlob && (
+        <div className="mt-4">
+          <AudioVisualizer
+            blob={audioBlob}
+            width={500}
+            height={75}
+            barWidth={1}
+            gap={0}
+            barColor={"#f76565"}
+          />
+        </div>
+      )}
     </div>
   );
 };
